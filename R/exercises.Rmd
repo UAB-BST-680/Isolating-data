@@ -1,7 +1,7 @@
 ---
 title: "Isolating data with dplyr"
 author:
-  - Byron C. Jaeger^[University of Alabama at Birmingham, bcjaeger@uab.edu]
+  - [TEAM NAME GOES HERE]
 output: 
   html_document:
     df_print: paged
