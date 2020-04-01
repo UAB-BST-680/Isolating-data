@@ -1,0 +1,237 @@
+---
+title: "Isolating data with dplyr"
+author:
+  - Byron C. Jaeger^[University of Alabama at Birmingham, bcjaeger@uab.edu]
+output: 
+  html_document:
+    df_print: paged
+    highlight: tango
+    code_folding: hide
+    toc: true
+    toc_float: true
+    theme: united
+    fig_width: 7
+    fig_height: 4
+---
+
+# Overview
+
+NHANES (The National Health and Nutrition Examination Survey) was designed to assess the health and nutritional status of the US population and is conducted by the National Center for Health Statistics of the Centers for Disease Control and Prevention. Since 1999-2000, NHANES has been conducted in two-year cycles. For each cycle, potential participants are identified through stratified, multistage probability sampling of the non-institutionalized US population. In this set of exercises, we will use the ten cycles conducted from 1999-2000 through 2017-2018. 
+
+## Import
+
+```{r, message=FALSE, warning=FALSE}
+
+knitr::opts_chunk$set(echo = TRUE, message = FALSE)
+
+library(tidyverse)
+
+nhanes <- read_csv('data/NHANES_analysis_pre_exclusions.csv')
+
+nhanes
+  
+```
+
+
+## Data dictionary
+
+Review this briefly and use it as a reference to engage with the exercises below.
+
+```{r}
+
+library(knitr)
+library(kableExtra)
+
+
+nhanes_descr <- c(
+  "seqn"              = "SP identifier",
+  "exam"              = "NHANES exam year",
+  "psu"               = "primary sampling unit",
+  "strata"            = "survey strata",
+  "wts_mec_2yr"       = "survey weights",
+  "exam_status"       = "How did SP engage with exam?",
+  "age"               = "SP age, years",
+  "age_group"         = "SP age group, years",
+  "sex"               = "SP sex",
+  "race_ethnicity"    = "SP race and/or ethnicity",
+  "education"         = "SP education",
+  "income_hh"         = "SP household income",
+  "pregnant"          = "was SP pregnant at time of exam?",
+  "bp_sys_mmhg"       = "SP systolic blood pressure, mm Hg",
+  "bp_dia_mmhg"       = "SP diastolic blood pressure, mm Hg",
+  "n_msr_sbp"         = "Number of valid systolic BP readings",
+  "n_msr_dbp"         = "Number of valid diastolic BP readings",
+  "bp_controlled"     = "Did SP have controlled BP? (<140/90 mm Hg)",
+  "acr_mgg"           = "SP albumin-to-creatinine ratio, mg/g",
+  "albuminuria"       = "Did SP have albuminuria? (ACR > 30 mg/g)",
+  "chol_hdl_mgdl"     = "SP HDL-cholesterol, mg/dl",
+  "chol_total_mgdl"   = "SP total cholesterol, mg/dl",
+  "health_insurance"  = "SP health insurance status",
+  "bp_high_aware"     = "SP ever told by Dr: 'you have high blood pressure'?",
+  "bp_meds"           = "SP currently using antihypertensive medication?",
+  "hc_usual_facility" = "SP has a usual healthcare facility?",
+  "hc_visit_1yr"      = "SP visited their healthcare facility last year?"
+)
+
+abbrevs <- c("SP = survey participant", 
+  "BP = blood pressure", 
+  "HDL = high density lipoprotein")
+
+enframe(nhanes_descr) %>% 
+  kable(col.names = c('Variable', 'Description')) %>% 
+  kable_styling(bootstrap_options = c('striped', 'hover')) %>% 
+  footnote(general = paste(abbrevs, collapse = '; '))
+
+
+```
+
+
+# Pre-requisites
+
+Before starting these exercises, you should have a good understanding of 
+
+1. The [Isolating data with dplyr](https://rstudio.cloud/learn/primers/2.2) Primer.
+
+1. Chapter 5 of [R for Data Science](https://r4ds.had.co.nz/transform.html)
+
+# Exercise 1
+
+Suppose we are conducting a study and aim to include NHANES participants meeting the following conditions: 
+
+1. Age 18+
+1. Completed the NHANES interview and examination
+1. Not pregnant at time of exam
+1. 1+ systolic and diastolic BP measurement
+1. Complete information on BP medication use.
+
+Create a `tibble` with two columns: 
+
+- `inclusion`: a numeric vector taking values 1, 2, 3, 4, and 5
+
+- `description`: a character vector comprising the inclusion criteria above.
+
+```{r}
+
+# your code goes here
+
+```
+
+Your solution should look like this:
+
+```{r}
+
+read_rds("solutions/01_solution.rds")
+
+```
+
+# Exercise 2
+
+Apply the `filter` function to apply each inclusion criteria, in the same sequence as I listed earlier, to the NHANES data. Because we need to track how many participants were included after each step, I would recommend creating five separate datasets, like so: 
+
+```{r, eval = FALSE}
+
+# your code will fill in the ... with conditions that 
+# align with the inclusion criteria given above.
+e1 <- filter(nhanes, ...)
+e2 <- filter(e1, ...)
+e3 <- filter(e2, ...)
+e4 <- filter(e3, ...)
+e5 <- filter(e4, ...)
+
+# hints: 
+# 
+# use the data dictionary to identify relevant variables.
+#
+# is.na() returns TRUE when a value is missing. Run this example to verify
+# x <- c(1, NA, 3)
+# is.na(x)
+#
+# for e3, be careful. Pregnant is NA for some female participants.
+# In this case, we only want to apply the exclusion if we are certain
+# that a person was pregnant, so what we really need is to include 
+# participants who have pregnant == 'No' OR pregnant is missing.
+# think about how you could use the is.na() function.
+# 
+# for e4 and e5, think about how you could use the is.na() function
+# in combination with the NOT (!) operator. For example, !condition
+# returns TRUE is the condition is NOT TRUE. 
+
+```
+
+Create a numeric vector of length 5 that contains the number of rows in each dataset you created (i.e., `nrow(e1)`, ..., `nrow(e5)`). Attach that vector to the `tibble` you created in exercise 1, and name it `n`. 
+
+```{r}
+
+# your code goes here.
+
+# Hints. 
+# 
+# Remember that you can access or add columns to lists (and transitively, 
+# data frames) using $. for example, nhanes$new_col <- 1 adds a new column 
+# of 1's to nhanes.
+
+
+```
+
+
+Your solution should look like this: 
+
+```{r}
+
+read_rds("solutions/02_solution.rds")
+
+```
+
+
+# Exercise 3
+
+Apply `kable()` and `kable_styling()` to form a publication-ready table describing your inclusions.
+
+```{r}
+
+# your code goes here
+
+# Hint: My solution looks like this:
+#
+# nhanes_sample %>%       [I start with the solution from problem 2]
+#   select() %>%          [I remove one column]
+#   kable() %>%           [I supply column labels]
+#   kable_styling() %>%   [I style]
+#   footnote()            [I add a general footnote]
+
+```
+
+Your solution should look like this: 
+
+```{r}
+
+read_rds("solutions/03_solution.rds")
+
+```
+
+
+# Exercise 4
+
+Using your final sample of 51,761 NHANES participants, identify whether the highest value of systolic BP was provided by a male or female in each exam year. To do this, you should apply a grouped filter (i.e., use `group_by()` and then `filter()`).
+
+- The groups should be defined by `exam`.
+
+- The filter step should keep rows that are equal to the maximum systolic BP value.
+
+- A final step should apply the select function to keep only the `exam`, `bp_sys_mmhg`, and `sex` columns. 
+
+Your solution should look like this: 
+
+```{r}
+
+read_rds("solutions/04_solution.rds")
+
+```
+
+Do you notice anything peculiar? Try looking at the minimum systolic BP values instead. Do you notice any peculiar patterns here?
+
+
+
+
+
+
