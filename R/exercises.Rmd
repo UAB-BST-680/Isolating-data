@@ -22,13 +22,21 @@ NHANES (The National Health and Nutrition Examination Survey) was designed to as
 
 ```{r, message=FALSE, warning=FALSE}
 
+# set gloabal rmarkdown options
+# echo = TRUE     --> show code blocks in markdown doc
+# message = FALSE --> suppress package startup and other messages
 knitr::opts_chunk$set(echo = TRUE, message = FALSE)
 
-library(tidyverse)
+# Load packages 
+library(tidyverse)  # includes dplyr - filter / select
+library(knitr)      # for kable
+library(kableExtra) # for kable_styling and other utilities
 
 nhanes <- read_rds('data/NHANES_analysis_pre_exclusions.rds')
 
-nhanes
+# trying to print all rows will make df_print: paged cause a pandoc error.
+# don't modify the line below! It may break knitr.
+nhanes[1:10, ]
   
 ```
 
@@ -39,9 +47,12 @@ Review this briefly and use it as a reference to engage with the exercises below
 
 ```{r}
 
-library(knitr)
-library(kableExtra)
-
+# A data dictionary is more comprehensive than these two columns,
+# but these two columns are the core components of a data dictionary.
+# I highly recommend you only engage with data when there is a 
+# data dictionary available. If a collaborator cannot share one of
+# these with you when they ask you to analyze your data, then they 
+# should not be your collaborator.
 
 nhanes_descr <- c(
   "seqn"              = "SP identifier",
@@ -73,15 +84,21 @@ nhanes_descr <- c(
   "hc_visit_1yr"      = "SP visited their healthcare facility last year?"
 )
 
+# abbreviations need to be placed in the footnote of the table
 abbrevs <- c("SP = survey participant", 
   "BP = blood pressure", 
   "HDL = high density lipoprotein")
 
+# the code here transforms a vector into a tibble,
 enframe(nhanes_descr) %>% 
+  # this code is relevant for exercise 4. Please use it as a template.
   kable(col.names = c('Variable', 'Description')) %>% 
   kable_styling(bootstrap_options = c('striped', 'hover')) %>% 
   footnote(general = paste(abbrevs, collapse = '; '))
 
+# the paste() function is used here. To give a brief summary,
+# paste() combines string vectors. In this case, we are using 
+# paste to collapse a vector and separate each component by '; '
 
 ```
 
@@ -219,6 +236,13 @@ Using your final sample of 51,761 NHANES participants, identify whether the high
 - The filter step should keep rows that are equal to the maximum systolic BP value.
 
 - A final step should apply the select function to keep only the `exam`, `bp_sys_mmhg`, and `sex` columns. 
+
+```{r}
+
+# Your code goes here, hints are above.
+
+```
+
 
 Your solution should look like this: 
 
