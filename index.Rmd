@@ -1,0 +1,480 @@
+---
+title: "Isolating data with dplyr"
+subtitle: "also: pipes! %>%"
+author: "Byron C. Jaeger"
+date: "Last updated: `r Sys.Date()`"
+output:
+  xaringan::moon_reader:
+    css: "slides.css"
+    logo: img/intro_2R_hex.png
+    lib_dir: libs
+    nature:
+      highlightStyle: github
+      highlightLines: true
+      countIncrementalSlides: false
+---
+class: inverse, center, middle
+
+```{r, include = FALSE}
+
+library(magrittr)
+library(dplyr)
+library(readr)
+
+knitr::opts_chunk$set(
+  echo = TRUE,
+  warning = FALSE,
+  message = FALSE,
+  fig.width = 12,
+  fig.height = 5.5,
+  dpi = 72 * 5
+)
+
+```
+
+# `select`, `filter`, `arrange`
+
+---
+
+## Data:
+
+```{r, echo = FALSE}
+
+nhanes <- read_rds('data/NHANES_analysis_pre_exclusions.rds') %>% 
+  select(exam, age, sex, bp_sys_mmhg, n_msr_sbp, bp_meds) %>% 
+  tidyr::drop_na() %>% 
+  group_by(exam) %>% 
+  slice(1:2) %>% 
+  ungroup()
+
+nhanes
+
+```
+---
+class: center, middle
+
+# but first...
+
+---
+
+# Program a story
+
+Here is the legendary tale of Little Bunny Foo Foo.
+
+> Little bunny Foo Foo <br/>
+> Went hopping through the forest <br/>
+> Scooping up the field mice <br/>
+> And bopping them on the head 
+
+--
+
+How would we go about programming this in R?
+
+```{r, eval = FALSE}
+
+foo_foo <- little_bunny()
+
+# now what?
+
+```
+
+---
+
+# New objects
+
+We could save each intermediate step as a new object:
+
+```{r, eval = FALSE}
+
+
+foo_foo <- little_bunny() # Little bunny Foo Foo
+
+foo_foo_1 <- hop(foo_foo, through = forest) # Went hopping through the forest
+
+foo_foo_2 <- scoop(foo_foo_1, up = field_mice) # Scooping up the field mice
+
+foo_foo_3 <- bop(foo_foo_2, on = head) # And bopping them on the head
+
+```
+
+Problems: 
+
+- The code is cluttered with unimportant names
+
+- You have to carefully increment the suffix on each line.
+
+---
+
+# Overwrite the original
+
+We could overwrite the original object:
+
+```{r, eval = FALSE}
+
+foo_foo <- little_bunny() # Little bunny Foo Foo
+
+foo_foo <- hop(foo_foo, through = forest) # Went hopping through the forest
+
+foo_foo <- scoop(foo_foo, up = field_mice) # Scooping up the field mice
+
+foo_foo <- bop(foo_foo, on = head) # And bopping them on the head
+
+
+```
+
+less typing (and less likely to make a mistake), but
+
+- Debugging is painful: if you make a mistake you’ll need to re-run the complete pipeline from the beginning.
+
+- The repetition of the object being transformed (we’ve written foo_foo seven times!) obscures what’s changing on each line.
+
+---
+
+# Function composition
+
+Abandon assignment and just string the function calls together:
+
+```{r, eval = FALSE}
+
+bop(
+  scoop(
+    hop(
+      foo_foo, # Little bunny Foo Foo
+      through = forest # Went hopping through the forest
+    ),
+    up = field_mice # Scooping up the field mice
+  ), 
+  on = head # And bopping them on the head
+)
+```
+
+Nobody wants to read this. Let's move on.
+
+---
+
+# Use the pipe!
+
+Last, we could use the pipe:
+
+```{r, eval = FALSE}
+
+foo_foo %>%                  # Little bunny Foo Foo
+  hop(through = forest) %>%  # Went hopping through the forest
+  scoop(up = field_mice) %>% # Scooping up the field mice
+  bop(on = head)             # And bopping them on the head
+
+```
+
+--
+
+Pros
+
+- Focusses on verbs, not nouns.
+
+- You can read this series of function compositions like it’s a set of imperative actions: Foo Foo hops, then scoops, then bops.
+
+---
+
+# Use the pipe!
+
+Last, we could use the pipe:
+
+```{r, eval = FALSE}
+
+foo_foo %>%                  # Little bunny Foo Foo
+  hop(through = forest) %>%  # Went hopping through the forest
+  scoop(up = field_mice) %>% # Scooping up the field mice
+  bop(on = head)             # And bopping them on the head
+
+```
+
+Cons
+
+- If you’ve never seen `%>%` before, you’ll have no idea what this code does. 
+
+Fortunately, most people pick up the idea very quickly, so when you share your code with others who aren’t familiar with the pipe, you can easily teach them.
+
+---
+
+# What's a pipe?
+
+Put simply, a pipe takes the object on the left hand side and makes it the first argument for the function on the right hand side. 
+
+```{r}
+
+x <- 1:10
+
+# take the mean of x
+mean(x)
+
+# take x, and then find it's mean
+x %>% mean()
+
+```
+
+
+---
+
+# What's a pipe?
+
+More broadly, these two code snippets equivalent.
+
+```{r, eval = FALSE}
+
+# use the function
+cool_function(main_arg = x, other_arg = y, last_arg = z)
+
+# start with x and then use the function
+x %>% 
+  cool_function(other_arg = y, last_arg = z)
+
+```
+
+---
+
+# What's a pipe?
+
+More broadly, these two code snippets equivalent. 
+
+Also, one snippet is much more readable.
+
+```{r, eval = FALSE}
+
+# use the function
+another_cool_one(
+  cool_function(main_arg = x, other_arg = y, last_arg = z),
+  another_arg = w
+)
+
+
+# start with x and then use the function
+x %>% 
+  cool_function(other_arg = y, last_arg = z) %>% 
+  another_cool_one(another_arg = w)
+
+# stylistic tip: end lines at the %>% 
+
+```
+
+---
+
+# When _not_ to pipe
+
+1. Your pipes are longer than (say) five steps. In that case, create intermediate objects with meaningful names.
+
+    + make debugging easier, because you can more easily check the intermediate results 
+    + makes it easier to understand your code, because the variable names can help communicate intent.
+
+--
+
+2. You have multiple inputs or outputs. If there isn’t one primary object being transformed, but two or more objects being combined together, don’t use the pipe.
+
+--
+
+3. You are starting to think about a directed graph with a complex dependency structure. Pipes are fundamentally linear and expressing complex relationships with them will typically yield confusing code.
+
+---
+class: inverse, center, middle
+
+# Examples
+
+---
+class: center, middle
+
+How many males were taking medications to lower blood pressure?
+
+---
+
+```{r}
+
+males <- filter(nhanes, sex == 'Male') #<<
+males_bp_meds <- filter(males, bp_meds == 'Yes')
+answer <- nrow(males_bp_meds)
+
+```
+
+```{r, echo = FALSE}
+males
+```
+
+---
+
+```{r}
+
+males <- filter(nhanes, sex == 'Male') 
+males_bp_meds <- filter(males, bp_meds == 'Yes') #<<
+answer <- nrow(males_bp_meds)
+
+```
+
+```{r, echo = FALSE}
+males_bp_meds
+```
+
+---
+
+```{r}
+
+males <- filter(nhanes, sex == 'Male') 
+males_bp_meds <- filter(males, bp_meds == 'Yes') 
+answer <- nrow(males_bp_meds) #<<
+
+```
+
+```{r, echo = FALSE}
+answer
+```
+
+---
+
+# Pipe solution:
+
+```{r}
+
+answer <- nhanes %>% 
+  filter(sex == 'Male', bp_meds == 'Yes') %>% 
+  nrow()
+
+answer
+
+```
+
+To make `answer`, I started with `nhanes`, THEN
+
+- I filtered it to contain only males on BP meds, THEN
+
+- I counted how many rows were left over.
+
+---
+class: center, middle
+
+What was the highest systolic blood pressure for males? Females?
+
+---
+
+```{r, eval = FALSE}
+
+nhanes %>% #<<
+  filter(sex == 'Male') %>% 
+  arrange(desc(bp_sys_mmhg)) %>% 
+  select(bp_sys_mmhg) %>% 
+  slice(1) %>% 
+  as.numeric()
+
+```
+
+```{r, echo = FALSE}
+nhanes
+```
+
+---
+
+```{r, eval = FALSE}
+
+nhanes %>% 
+  filter(sex == 'Male') %>% #<<
+  arrange(desc(bp_sys_mmhg)) %>% 
+  select(bp_sys_mmhg) %>% 
+  slice(1) %>% 
+  as.numeric()
+
+```
+
+```{r, echo = FALSE}
+nhanes %>%
+  filter(sex == 'Male')
+```
+
+---
+
+```{r, eval = FALSE}
+
+nhanes %>% 
+  filter(sex == 'Male') %>% 
+  arrange(desc(bp_sys_mmhg)) %>% #<<
+  select(bp_sys_mmhg) %>% 
+  slice(1) %>% 
+  as.numeric()
+
+```
+
+```{r, echo = FALSE}
+nhanes %>%
+  filter(sex == 'Male') %>% 
+  arrange(desc(bp_sys_mmhg)) 
+```
+
+---
+
+```{r, eval = FALSE}
+
+nhanes %>% 
+  filter(sex == 'Male') %>% 
+  arrange(desc(bp_sys_mmhg)) %>% 
+  select(bp_sys_mmhg) %>% #<<
+  slice(1) %>% 
+  as.numeric()
+
+```
+
+```{r, echo = FALSE}
+nhanes %>%
+  filter(sex == 'Male') %>% 
+  arrange(desc(bp_sys_mmhg)) %>% 
+  select(bp_sys_mmhg)
+```
+
+---
+
+```{r, eval = FALSE}
+
+nhanes %>% 
+  filter(sex == 'Male') %>% 
+  arrange(desc(bp_sys_mmhg)) %>% 
+  select(bp_sys_mmhg) %>% 
+  slice(1) %>% #<<
+  as.numeric()
+
+```
+
+```{r, echo = FALSE}
+nhanes %>%
+  filter(sex == 'Male') %>% 
+  arrange(desc(bp_sys_mmhg)) %>% 
+  select(bp_sys_mmhg) %>% 
+  slice(1)
+```
+
+---
+
+```{r, eval = FALSE}
+
+nhanes %>%
+  filter(sex == 'Male') %>% 
+  arrange(desc(bp_sys_mmhg)) %>% 
+  select(bp_sys_mmhg) %>% 
+  slice(1) %>% 
+  as.numeric() #<<
+
+```
+
+```{r, echo = FALSE}
+nhanes %>%
+  filter(sex == 'Male') %>% 
+  arrange(desc(bp_sys_mmhg)) %>% 
+  select(bp_sys_mmhg) %>% 
+  slice(1) %>% 
+  as.numeric()
+```
+
+---
+
+# Your turn
+
+- Open up the [Isolate data](https://rstudio.cloud/spaces/15174/project/1096224) project in Rstudio.cloud 
+
+- Start reading the exercises.Rmd file
+
+- Discuss problems among teams!
+
+

@@ -1,0 +1,675 @@
+<!DOCTYPE html>
+<html xmlns="http://www.w3.org/1999/xhtml" lang="" xml:lang="">
+  <head>
+    <title>Isolating data with dplyr</title>
+    <meta charset="utf-8" />
+    <meta name="author" content="Byron C. Jaeger" />
+    <link rel="stylesheet" href="slides.css" type="text/css" />
+  </head>
+  <body>
+    <textarea id="source">
+class: center, middle, inverse, title-slide
+
+# Isolating data with dplyr
+## also: pipes! %&gt;%
+### Byron C. Jaeger
+### Last updated: 2020-04-05
+
+---
+
+class: inverse, center, middle
+
+
+
+# `select`, `filter`, `arrange`
+
+---
+
+## Data:
+
+
+```
+## # A tibble: 20 x 6
+##     exam   age sex    bp_sys_mmhg n_msr_sbp bp_meds
+##    &lt;dbl&gt; &lt;dbl&gt; &lt;chr&gt;        &lt;dbl&gt;     &lt;dbl&gt; &lt;chr&gt;  
+##  1  1999    77 Male         101.          3 No     
+##  2  1999    49 Male         122           3 Yes    
+##  3  2001    39 Male         125.          3 No     
+##  4  2001    23 Male         103.          3 No     
+##  5  2003    16 Female        98.7         3 No     
+##  6  2003    17 Male         103           2 No     
+##  7  2005    44 Female       139.          3 Yes    
+##  8  2005    70 Male         131.          3 Yes    
+##  9  2007    62 Female       123.          3 Yes    
+## 10  2007    71 Male         145.          3 Yes    
+## 11  2009    34 Male         113.          3 No     
+## 12  2009    16 Male         110           3 No     
+## 13  2011    22 Male         111.          3 No     
+## 14  2011    44 Female       118           3 No     
+## 15  2013    69 Male         113.          3 No     
+## 16  2013    54 Male         157.          3 No     
+## 17  2015    62 Male         123.          3 No     
+## 18  2015    53 Male         140           3 No     
+## 19  2017    66 Female       200           2 Yes    
+## 20  2017    18 Male         111.          3 No
+```
+---
+class: center, middle
+
+# but first...
+
+---
+
+# Program a story
+
+Here is the legendary tale of Little Bunny Foo Foo.
+
+&gt; Little bunny Foo Foo &lt;br/&gt;
+&gt; Went hopping through the forest &lt;br/&gt;
+&gt; Scooping up the field mice &lt;br/&gt;
+&gt; And bopping them on the head 
+
+--
+
+How would we go about programming this in R?
+
+
+```r
+foo_foo &lt;- little_bunny()
+
+# now what?
+```
+
+---
+
+# New objects
+
+We could save each intermediate step as a new object:
+
+
+```r
+foo_foo &lt;- little_bunny() # Little bunny Foo Foo
+
+foo_foo_1 &lt;- hop(foo_foo, through = forest) # Went hopping through the forest
+
+foo_foo_2 &lt;- scoop(foo_foo_1, up = field_mice) # Scooping up the field mice
+
+foo_foo_3 &lt;- bop(foo_foo_2, on = head) # And bopping them on the head
+```
+
+Problems: 
+
+- The code is cluttered with unimportant names
+
+- You have to carefully increment the suffix on each line.
+
+---
+
+# Overwrite the original
+
+We could overwrite the original object:
+
+
+```r
+foo_foo &lt;- little_bunny() # Little bunny Foo Foo
+
+foo_foo &lt;- hop(foo_foo, through = forest) # Went hopping through the forest
+
+foo_foo &lt;- scoop(foo_foo, up = field_mice) # Scooping up the field mice
+
+foo_foo &lt;- bop(foo_foo, on = head) # And bopping them on the head
+```
+
+less typing (and less likely to make a mistake), but
+
+- Debugging is painful: if you make a mistake you’ll need to re-run the complete pipeline from the beginning.
+
+- The repetition of the object being transformed (we’ve written foo_foo seven times!) obscures what’s changing on each line.
+
+---
+
+# Function composition
+
+Abandon assignment and just string the function calls together:
+
+
+```r
+bop(
+  scoop(
+    hop(
+      foo_foo, # Little bunny Foo Foo
+      through = forest # Went hopping through the forest
+    ),
+    up = field_mice # Scooping up the field mice
+  ), 
+  on = head # And bopping them on the head
+)
+```
+
+Nobody wants to read this. Let's move on.
+
+---
+
+# Use the pipe!
+
+Last, we could use the pipe:
+
+
+```r
+foo_foo %&gt;%                  # Little bunny Foo Foo
+  hop(through = forest) %&gt;%  # Went hopping through the forest
+  scoop(up = field_mice) %&gt;% # Scooping up the field mice
+  bop(on = head)             # And bopping them on the head
+```
+
+--
+
+Pros
+
+- Focusses on verbs, not nouns.
+
+- You can read this series of function compositions like it’s a set of imperative actions: Foo Foo hops, then scoops, then bops.
+
+---
+
+# Use the pipe!
+
+Last, we could use the pipe:
+
+
+```r
+foo_foo %&gt;%                  # Little bunny Foo Foo
+  hop(through = forest) %&gt;%  # Went hopping through the forest
+  scoop(up = field_mice) %&gt;% # Scooping up the field mice
+  bop(on = head)             # And bopping them on the head
+```
+
+Cons
+
+- If you’ve never seen `%&gt;%` before, you’ll have no idea what this code does. 
+
+Fortunately, most people pick up the idea very quickly, so when you share your code with others who aren’t familiar with the pipe, you can easily teach them.
+
+---
+
+# What's a pipe?
+
+Put simply, a pipe takes the object on the left hand side and makes it the first argument for the function on the right hand side. 
+
+
+```r
+x &lt;- 1:10
+
+# take the mean of x
+mean(x)
+```
+
+```
+## [1] 5.5
+```
+
+```r
+# take x, and then find it's mean
+x %&gt;% mean()
+```
+
+```
+## [1] 5.5
+```
+
+
+---
+
+# What's a pipe?
+
+More broadly, these two code snippets equivalent.
+
+
+```r
+# use the function
+cool_function(main_arg = x, other_arg = y, last_arg = z)
+
+# start with x and then use the function
+x %&gt;% 
+  cool_function(other_arg = y, last_arg = z)
+```
+
+---
+
+# What's a pipe?
+
+More broadly, these two code snippets equivalent. 
+
+Also, one snippet is much more readable.
+
+
+```r
+# use the function
+another_cool_one(
+  cool_function(main_arg = x, other_arg = y, last_arg = z),
+  another_arg = w
+)
+
+
+# start with x and then use the function
+x %&gt;% 
+  cool_function(other_arg = y, last_arg = z) %&gt;% 
+  another_cool_one(another_arg = w)
+
+# stylistic tip: end lines at the %&gt;% 
+```
+
+---
+
+# When _not_ to pipe
+
+1. Your pipes are longer than (say) five steps. In that case, create intermediate objects with meaningful names.
+
+    + make debugging easier, because you can more easily check the intermediate results 
+    + makes it easier to understand your code, because the variable names can help communicate intent.
+
+--
+
+2. You have multiple inputs or outputs. If there isn’t one primary object being transformed, but two or more objects being combined together, don’t use the pipe.
+
+--
+
+3. You are starting to think about a directed graph with a complex dependency structure. Pipes are fundamentally linear and expressing complex relationships with them will typically yield confusing code.
+
+---
+class: inverse, center, middle
+
+# Examples
+
+---
+class: center, middle
+
+How many males were taking medications to lower blood pressure?
+
+---
+
+
+```r
+*males &lt;- filter(nhanes, sex == 'Male')
+males_bp_meds &lt;- filter(males, bp_meds == 'Yes')
+answer &lt;- nrow(males_bp_meds)
+```
+
+
+```
+## # A tibble: 15 x 6
+##     exam   age sex   bp_sys_mmhg n_msr_sbp bp_meds
+##    &lt;dbl&gt; &lt;dbl&gt; &lt;chr&gt;       &lt;dbl&gt;     &lt;dbl&gt; &lt;chr&gt;  
+##  1  1999    77 Male         101.         3 No     
+##  2  1999    49 Male         122          3 Yes    
+##  3  2001    39 Male         125.         3 No     
+##  4  2001    23 Male         103.         3 No     
+##  5  2003    17 Male         103          2 No     
+##  6  2005    70 Male         131.         3 Yes    
+##  7  2007    71 Male         145.         3 Yes    
+##  8  2009    34 Male         113.         3 No     
+##  9  2009    16 Male         110          3 No     
+## 10  2011    22 Male         111.         3 No     
+## 11  2013    69 Male         113.         3 No     
+## 12  2013    54 Male         157.         3 No     
+## 13  2015    62 Male         123.         3 No     
+## 14  2015    53 Male         140          3 No     
+## 15  2017    18 Male         111.         3 No
+```
+
+---
+
+
+```r
+males &lt;- filter(nhanes, sex == 'Male') 
+*males_bp_meds &lt;- filter(males, bp_meds == 'Yes')
+answer &lt;- nrow(males_bp_meds)
+```
+
+
+```
+## # A tibble: 3 x 6
+##    exam   age sex   bp_sys_mmhg n_msr_sbp bp_meds
+##   &lt;dbl&gt; &lt;dbl&gt; &lt;chr&gt;       &lt;dbl&gt;     &lt;dbl&gt; &lt;chr&gt;  
+## 1  1999    49 Male         122          3 Yes    
+## 2  2005    70 Male         131.         3 Yes    
+## 3  2007    71 Male         145.         3 Yes
+```
+
+---
+
+
+```r
+males &lt;- filter(nhanes, sex == 'Male') 
+males_bp_meds &lt;- filter(males, bp_meds == 'Yes') 
+*answer &lt;- nrow(males_bp_meds)
+```
+
+
+```
+## [1] 3
+```
+
+---
+
+# Pipe solution:
+
+
+```r
+answer &lt;- nhanes %&gt;% 
+  filter(sex == 'Male', bp_meds == 'Yes') %&gt;% 
+  nrow()
+
+answer
+```
+
+```
+## [1] 3
+```
+
+To make `answer`, I started with `nhanes`, THEN
+
+- I filtered it to contain only males on BP meds, THEN
+
+- I counted how many rows were left over.
+
+---
+class: center, middle
+
+What was the highest systolic blood pressure for males? Females?
+
+---
+
+
+```r
+*nhanes %&gt;%
+  filter(sex == 'Male') %&gt;% 
+  arrange(desc(bp_sys_mmhg)) %&gt;% 
+  select(bp_sys_mmhg) %&gt;% 
+  slice(1) %&gt;% 
+  as.numeric()
+```
+
+
+```
+## # A tibble: 20 x 6
+##     exam   age sex    bp_sys_mmhg n_msr_sbp bp_meds
+##    &lt;dbl&gt; &lt;dbl&gt; &lt;chr&gt;        &lt;dbl&gt;     &lt;dbl&gt; &lt;chr&gt;  
+##  1  1999    77 Male         101.          3 No     
+##  2  1999    49 Male         122           3 Yes    
+##  3  2001    39 Male         125.          3 No     
+##  4  2001    23 Male         103.          3 No     
+##  5  2003    16 Female        98.7         3 No     
+##  6  2003    17 Male         103           2 No     
+##  7  2005    44 Female       139.          3 Yes    
+##  8  2005    70 Male         131.          3 Yes    
+##  9  2007    62 Female       123.          3 Yes    
+## 10  2007    71 Male         145.          3 Yes    
+## 11  2009    34 Male         113.          3 No     
+## 12  2009    16 Male         110           3 No     
+## 13  2011    22 Male         111.          3 No     
+## 14  2011    44 Female       118           3 No     
+## 15  2013    69 Male         113.          3 No     
+## 16  2013    54 Male         157.          3 No     
+## 17  2015    62 Male         123.          3 No     
+## 18  2015    53 Male         140           3 No     
+## 19  2017    66 Female       200           2 Yes    
+## 20  2017    18 Male         111.          3 No
+```
+
+---
+
+
+```r
+nhanes %&gt;% 
+* filter(sex == 'Male') %&gt;%
+  arrange(desc(bp_sys_mmhg)) %&gt;% 
+  select(bp_sys_mmhg) %&gt;% 
+  slice(1) %&gt;% 
+  as.numeric()
+```
+
+
+```
+## # A tibble: 15 x 6
+##     exam   age sex   bp_sys_mmhg n_msr_sbp bp_meds
+##    &lt;dbl&gt; &lt;dbl&gt; &lt;chr&gt;       &lt;dbl&gt;     &lt;dbl&gt; &lt;chr&gt;  
+##  1  1999    77 Male         101.         3 No     
+##  2  1999    49 Male         122          3 Yes    
+##  3  2001    39 Male         125.         3 No     
+##  4  2001    23 Male         103.         3 No     
+##  5  2003    17 Male         103          2 No     
+##  6  2005    70 Male         131.         3 Yes    
+##  7  2007    71 Male         145.         3 Yes    
+##  8  2009    34 Male         113.         3 No     
+##  9  2009    16 Male         110          3 No     
+## 10  2011    22 Male         111.         3 No     
+## 11  2013    69 Male         113.         3 No     
+## 12  2013    54 Male         157.         3 No     
+## 13  2015    62 Male         123.         3 No     
+## 14  2015    53 Male         140          3 No     
+## 15  2017    18 Male         111.         3 No
+```
+
+---
+
+
+```r
+nhanes %&gt;% 
+  filter(sex == 'Male') %&gt;% 
+* arrange(desc(bp_sys_mmhg)) %&gt;%
+  select(bp_sys_mmhg) %&gt;% 
+  slice(1) %&gt;% 
+  as.numeric()
+```
+
+
+```
+## # A tibble: 15 x 6
+##     exam   age sex   bp_sys_mmhg n_msr_sbp bp_meds
+##    &lt;dbl&gt; &lt;dbl&gt; &lt;chr&gt;       &lt;dbl&gt;     &lt;dbl&gt; &lt;chr&gt;  
+##  1  2013    54 Male         157.         3 No     
+##  2  2007    71 Male         145.         3 Yes    
+##  3  2015    53 Male         140          3 No     
+##  4  2005    70 Male         131.         3 Yes    
+##  5  2001    39 Male         125.         3 No     
+##  6  2015    62 Male         123.         3 No     
+##  7  1999    49 Male         122          3 Yes    
+##  8  2009    34 Male         113.         3 No     
+##  9  2013    69 Male         113.         3 No     
+## 10  2017    18 Male         111.         3 No     
+## 11  2011    22 Male         111.         3 No     
+## 12  2009    16 Male         110          3 No     
+## 13  2001    23 Male         103.         3 No     
+## 14  2003    17 Male         103          2 No     
+## 15  1999    77 Male         101.         3 No
+```
+
+---
+
+
+```r
+nhanes %&gt;% 
+  filter(sex == 'Male') %&gt;% 
+  arrange(desc(bp_sys_mmhg)) %&gt;% 
+* select(bp_sys_mmhg) %&gt;%
+  slice(1) %&gt;% 
+  as.numeric()
+```
+
+
+```
+## # A tibble: 15 x 1
+##    bp_sys_mmhg
+##          &lt;dbl&gt;
+##  1        157.
+##  2        145.
+##  3        140 
+##  4        131.
+##  5        125.
+##  6        123.
+##  7        122 
+##  8        113.
+##  9        113.
+## 10        111.
+## 11        111.
+## 12        110 
+## 13        103.
+## 14        103 
+## 15        101.
+```
+
+---
+
+
+```r
+nhanes %&gt;% 
+  filter(sex == 'Male') %&gt;% 
+  arrange(desc(bp_sys_mmhg)) %&gt;% 
+  select(bp_sys_mmhg) %&gt;% 
+* slice(1) %&gt;%
+  as.numeric()
+```
+
+
+```
+## # A tibble: 1 x 1
+##   bp_sys_mmhg
+##         &lt;dbl&gt;
+## 1        157.
+```
+
+---
+
+
+```r
+nhanes %&gt;%
+  filter(sex == 'Male') %&gt;% 
+  arrange(desc(bp_sys_mmhg)) %&gt;% 
+  select(bp_sys_mmhg) %&gt;% 
+  slice(1) %&gt;% 
+* as.numeric()
+```
+
+
+```
+## [1] 157.3333
+```
+
+---
+
+# Your turn
+
+- Open up the [Isolate data](https://rstudio.cloud/spaces/15174/project/1096224) project in Rstudio.cloud 
+
+- Start reading the exercises.Rmd file
+
+- Discuss problems among teams!
+    </textarea>
+<style data-target="print-only">@media screen {.remark-slide-container{display:block;}.remark-slide-scaler{box-shadow:none;}}</style>
+<script src="https://remarkjs.com/downloads/remark-latest.min.js"></script>
+<script>var slideshow = remark.create({
+"highlightStyle": "github",
+"highlightLines": true,
+"countIncrementalSlides": false
+});
+if (window.HTMLWidgets) slideshow.on('afterShowSlide', function (slide) {
+  window.dispatchEvent(new Event('resize'));
+});
+(function(d) {
+  var s = d.createElement("style"), r = d.querySelector(".remark-slide-scaler");
+  if (!r) return;
+  s.type = "text/css"; s.innerHTML = "@page {size: " + r.style.width + " " + r.style.height +"; }";
+  d.head.appendChild(s);
+})(document);
+
+(function(d) {
+  var el = d.getElementsByClassName("remark-slides-area");
+  if (!el) return;
+  var slide, slides = slideshow.getSlides(), els = el[0].children;
+  for (var i = 1; i < slides.length; i++) {
+    slide = slides[i];
+    if (slide.properties.continued === "true" || slide.properties.count === "false") {
+      els[i - 1].className += ' has-continuation';
+    }
+  }
+  var s = d.createElement("style");
+  s.type = "text/css"; s.innerHTML = "@media print { .has-continuation { display: none; } }";
+  d.head.appendChild(s);
+})(document);
+// delete the temporary CSS (for displaying all slides initially) when the user
+// starts to view slides
+(function() {
+  var deleted = false;
+  slideshow.on('beforeShowSlide', function(slide) {
+    if (deleted) return;
+    var sheets = document.styleSheets, node;
+    for (var i = 0; i < sheets.length; i++) {
+      node = sheets[i].ownerNode;
+      if (node.dataset["target"] !== "print-only") continue;
+      node.parentNode.removeChild(node);
+    }
+    deleted = true;
+  });
+})();
+// adds .remark-code-has-line-highlighted class to <pre> parent elements
+// of code chunks containing highlighted lines with class .remark-code-line-highlighted
+(function(d) {
+  const hlines = d.querySelectorAll('.remark-code-line-highlighted');
+  const preParents = [];
+  const findPreParent = function(line, p = 0) {
+    if (p > 1) return null; // traverse up no further than grandparent
+    const el = line.parentElement;
+    return el.tagName === "PRE" ? el : findPreParent(el, ++p);
+  };
+
+  for (let line of hlines) {
+    let pre = findPreParent(line);
+    if (pre && !preParents.includes(pre)) preParents.push(pre);
+  }
+  preParents.forEach(p => p.classList.add("remark-code-has-line-highlighted"));
+})(document);</script>
+
+<script>
+(function() {
+  var links = document.getElementsByTagName('a');
+  for (var i = 0; i < links.length; i++) {
+    if (/^(https?:)?\/\//.test(links[i].getAttribute('href'))) {
+      links[i].target = '_blank';
+    }
+  }
+})();
+</script>
+
+<script>
+slideshow._releaseMath = function(el) {
+  var i, text, code, codes = el.getElementsByTagName('code');
+  for (i = 0; i < codes.length;) {
+    code = codes[i];
+    if (code.parentNode.tagName !== 'PRE' && code.childElementCount === 0) {
+      text = code.textContent;
+      if (/^\\\((.|\s)+\\\)$/.test(text) || /^\\\[(.|\s)+\\\]$/.test(text) ||
+          /^\$\$(.|\s)+\$\$$/.test(text) ||
+          /^\\begin\{([^}]+)\}(.|\s)+\\end\{[^}]+\}$/.test(text)) {
+        code.outerHTML = code.innerHTML;  // remove <code></code>
+        continue;
+      }
+    }
+    i++;
+  }
+};
+slideshow._releaseMath(document);
+</script>
+<!-- dynamically load mathjax for compatibility with self-contained -->
+<script>
+(function () {
+  var script = document.createElement('script');
+  script.type = 'text/javascript';
+  script.src  = 'https://mathjax.rstudio.com/latest/MathJax.js?config=TeX-MML-AM_CHTML';
+  if (location.protocol !== 'file:' && /^https?:/.test(script.src))
+    script.src  = script.src.replace(/^https?:/, '');
+  document.getElementsByTagName('head')[0].appendChild(script);
+})();
+</script>
+  </body>
+</html>
