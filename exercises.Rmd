@@ -87,14 +87,17 @@ nhanes_descr <- c(
 # abbreviations need to be placed in the footnote of the table
 abbrevs <- c("SP = survey participant", 
   "BP = blood pressure", 
-  "HDL = high density lipoprotein")
+  "HDL = high density lipoprotein") %>% 
+  paste(collapse = '; ')
 
-# the code here transforms a vector into a tibble,
+# the enframe function transforms a vector into a tibble,
 enframe(nhanes_descr) %>% 
-  # this code is relevant for exercise 4. Please use it as a template.
-  kable(col.names = c('Variable', 'Description')) %>% 
-  kable_styling(bootstrap_options = c('striped', 'hover')) %>% 
-  footnote(general = paste(abbrevs, collapse = '; '))
+  gt(rowname_col = "name") %>%
+  tab_stubhead(label = 'Variable name') %>% 
+  cols_label(value = 'Variable description') %>% 
+  cols_align('right') %>% 
+  tab_source_note(source_note = abbrevs) %>% 
+  tab_header(title = 'Description of NHANES data')
 
 # the paste() function is used here. To give a brief summary,
 # paste() combines string vectors. In this case, we are using 
