@@ -466,3 +466,21 @@ nhanes %>%
   slice(1) %>% 
   as.numeric()
 ```
+
+---
+class: center, middle
+
+## Common logical operators in R
+
+operator    | definition                   | operator     | definition
+------------|------------------------------|--------------|----------------
+`<`         | less than                    |`x`&nbsp;&#124;&nbsp;`y`     | `x` OR `y` 
+`<=`        |	less than or equal to        |`is.na(x)`    | test if `x` is `NA`
+`>`         | greater than                 |`!is.na(x)`   | test if `x` is not `NA`
+`>=`        |	greater than or equal to     |`x %in% y`    | test if `x` is in `y`
+`==`        |	exactly equal to             |`!(x %in% y)` | test if `x` is not in `y`
+`!=`        |	not equal to                 |`!x`          | not `x`
+`&`         | and                          | `x & y`      | `x` AND `y`
+
+
+
