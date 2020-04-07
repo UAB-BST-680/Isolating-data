@@ -466,15 +466,3 @@ nhanes %>%
   slice(1) %>% 
   as.numeric()
 ```
-
----
-
-# Your turn
-
-- Open up the [Isolate data](https://rstudio.cloud/spaces/15174/project/1096224) project in Rstudio.cloud 
-
-- Start reading the exercises.Rmd file
-
-- Discuss problems among teams!
-
-
