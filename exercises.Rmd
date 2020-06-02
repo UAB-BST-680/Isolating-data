@@ -205,7 +205,7 @@ read_rds("solutions/02_solution.rds")
 
 # Exercise 3
 
-Apply `kable()` and `kable_styling()` to form a publication-ready table describing your inclusions.
+Apply `gt()` to form a publication-ready table describing your inclusions.
 
 ```{r}
 
@@ -213,11 +213,12 @@ Apply `kable()` and `kable_styling()` to form a publication-ready table describi
 
 # Hint: My solution looks like this:
 #
-# nhanes_sample %>%       [I start with the solution from problem 2]
-#   select() %>%          [I remove one column]
-#   kable() %>%           [I supply column labels]
-#   kable_styling() %>%   [I style]
-#   footnote()            [I add a general footnote]
+# nhanes_sample %>%            [start with the solution from problem 2]
+#   select() %>%               [remove one column]
+#   gt(rowname_col = ???) %>%  [initiate the table]
+#   tab_stubhead() %>%         [label table stub]
+#   cols_label() %>%           [label columns]
+#   ...                        [do other things]
 
 ```
 
